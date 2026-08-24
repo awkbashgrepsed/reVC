@@ -53,7 +53,6 @@ static void UpdateVehicleSpeed()
 		return;
 
 	CVehicle *vehicle = ped->m_pMyVehicle;
-	// Only affect the vehicle the player is actually driving.
 	if (vehicle->pDriver != ped)
 		return;
 
@@ -70,8 +69,8 @@ static void UpdateVehicleSpeed()
 	float speed2d = std::sqrt(speed.x * speed.x + speed.y * speed.y);
 
 	if (speed2d > 0.0001f) {
-		// Very high speed while ] is held. Preserve the vehicle's direction.
-		const float fastSpeed = 5.0f;
+		// Fast, but intentionally kept below the previous extreme value.
+		const float fastSpeed = 2.0f;
 		float scale = fastSpeed / speed2d;
 		vehicle->SetMoveSpeed(speed.x * scale, speed.y * scale, speed.z);
 	}
@@ -86,10 +85,7 @@ static void Worker()
 }
 
 struct Starter {
-	Starter()
-	{
-		std::thread(Worker).detach();
-	}
+	Starter() { std::thread(Worker).detach(); }
 };
 
 static Starter starter;
