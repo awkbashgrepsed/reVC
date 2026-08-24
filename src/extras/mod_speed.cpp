@@ -5,6 +5,7 @@
 #include "main.h"
 #include "PlayerPed.h"
 #include "World.h"
+#include "Vehicle.h"
 
 #ifdef LIBRW_GLFW
 #include <GLFW/glfw3.h>
@@ -45,34 +46,41 @@ static bool StopKeyDown()
 	return false;
 }
 
-static void UpdatePlayerSpeed()
+static void UpdateVehicleSpeed()
 {
 	CPlayerPed *ped = CWorld::Players[CWorld::PlayerInFocus].m_pPed;
-	if (ped == nil)
+	if (ped == nil || !ped->bInVehicle || ped->m_pMyVehicle == nil)
+		return;
+
+	CVehicle *vehicle = ped->m_pMyVehicle;
+	// Only affect the vehicle the player is actually driving.
+	if (vehicle->pDriver != ped)
 		return;
 
 	if (StopKeyDown()) {
-		ped->SetMoveSpeed(0.0f, 0.0f, 0.0f);
+		vehicle->SetMoveSpeed(0.0f, 0.0f, 0.0f);
+		vehicle->SetTurnSpeed(0.0f, 0.0f, 0.0f);
 		return;
 	}
 
 	if (!FastKeyDown())
 		return;
 
-	CVector speed = ped->GetMoveSpeed();
+	CVector speed = vehicle->GetMoveSpeed();
 	float speed2d = std::sqrt(speed.x * speed.x + speed.y * speed.y);
 
 	if (speed2d > 0.0001f) {
+		// Very high speed while ] is held. Preserve the vehicle's direction.
 		const float fastSpeed = 5.0f;
 		float scale = fastSpeed / speed2d;
-		ped->SetMoveSpeed(speed.x * scale, speed.y * scale, speed.z);
+		vehicle->SetMoveSpeed(speed.x * scale, speed.y * scale, speed.z);
 	}
 }
 
 static void Worker()
 {
 	while (running.load(std::memory_order_relaxed)) {
-		UpdatePlayerSpeed();
+		UpdateVehicleSpeed();
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
 }
