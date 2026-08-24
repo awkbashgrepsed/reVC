@@ -51,26 +51,20 @@ static void UpdatePlayerSpeed()
 		return;
 
 	if (StopKeyDown()) {
-		ped->m_vecMoveSpeed.x = 0.0f;
-		ped->m_vecMoveSpeed.y = 0.0f;
-		ped->m_vecMoveSpeed.z = 0.0f;
+		ped->SetMoveSpeed(0.0f, 0.0f, 0.0f);
 		return;
 	}
 
 	if (!FastKeyDown())
 		return;
 
-	// Keep the direction selected by normal player input, but force an
-	// extremely high horizontal velocity while ] is held.
-	float speedX = ped->m_vecMoveSpeed.x;
-	float speedY = ped->m_vecMoveSpeed.y;
-	float speed2d = std::sqrt(speedX * speedX + speedY * speedY);
+	CVector speed = ped->GetMoveSpeed();
+	float speed2d = std::sqrt(speed.x * speed.x + speed.y * speed.y);
 
 	if (speed2d > 0.0001f) {
-		const float fastSpeed = 2.0f;
+		const float fastSpeed = 5.0f;
 		float scale = fastSpeed / speed2d;
-		ped->m_vecMoveSpeed.x = speedX * scale;
-		ped->m_vecMoveSpeed.y = speedY * scale;
+		ped->SetMoveSpeed(speed.x * scale, speed.y * scale, speed.z);
 	}
 }
 
@@ -82,9 +76,6 @@ static void Worker()
 	}
 }
 
-// DEBUGMENU builds start the tiny input poller automatically. The normal
-// keyboard system still handles movement direction; this only overrides
-// velocity while one of the two mod keys is held.
 struct Starter {
 	Starter()
 	{
