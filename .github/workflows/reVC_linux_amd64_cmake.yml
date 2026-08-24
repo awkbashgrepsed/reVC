@@ -3,6 +3,10 @@ name: reVC Linux x64 OpenGL
 on:
   workflow_dispatch:
 
+env:
+  CFLAGS: -DDEBUGMENU
+  CXXFLAGS: -DDEBUGMENU
+
 jobs:
   build:
     runs-on: ubuntu-latest
