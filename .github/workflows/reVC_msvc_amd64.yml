@@ -3,6 +3,9 @@ name: reVC Windows x64 DirectX 9
 on:
   workflow_dispatch:
 
+env:
+  CL: /DDEBUGMENU
+
 jobs:
   build:
     runs-on: windows-latest
