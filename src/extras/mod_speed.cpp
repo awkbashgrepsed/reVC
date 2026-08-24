@@ -4,8 +4,6 @@
 
 #include "main.h"
 #include "Ped.h"
-#include "Pad.h"
-#include "Timer.h"
 
 #ifdef LIBRW_GLFW
 #include <GLFW/glfw3.h>
@@ -17,12 +15,12 @@
 
 #include <atomic>
 #include <chrono>
+#include <cmath>
 #include <thread>
 
 namespace ReVCModSpeed {
 
 static std::atomic<bool> running{true};
-static std::once_flag startOnce;
 
 static bool FastKeyDown()
 {
@@ -53,22 +51,26 @@ static void UpdatePlayerSpeed()
 		return;
 
 	if (StopKeyDown()) {
-		ped->SetMoveSpeed(0.0f, 0.0f, 0.0f);
+		ped->m_vecMoveSpeed.x = 0.0f;
+		ped->m_vecMoveSpeed.y = 0.0f;
+		ped->m_vecMoveSpeed.z = 0.0f;
 		return;
 	}
 
 	if (!FastKeyDown())
 		return;
 
-	// Keep the current movement direction, but replace the normal pedestrian
-	// velocity with a deliberately extreme speed. Normal input still chooses
-	// the direction, while ] acts as a temporary speed multiplier.
-	CVector speed = ped->GetMoveSpeed();
-	float speed2d = speed.Magnitude2D();
+	// Keep the direction selected by normal player input, but force an
+	// extremely high horizontal velocity while ] is held.
+	float speedX = ped->m_vecMoveSpeed.x;
+	float speedY = ped->m_vecMoveSpeed.y;
+	float speed2d = std::sqrt(speedX * speedX + speedY * speedY);
+
 	if (speed2d > 0.0001f) {
 		const float fastSpeed = 2.0f;
 		float scale = fastSpeed / speed2d;
-		ped->SetMoveSpeed(speed.x * scale, speed.y * scale, speed.z);
+		ped->m_vecMoveSpeed.x = speedX * scale;
+		ped->m_vecMoveSpeed.y = speedY * scale;
 	}
 }
 
@@ -80,15 +82,13 @@ static void Worker()
 	}
 }
 
-// The existing DEBUGMENU is initialized early and this small background
-// poller lets the speed keys work without changing the platform-specific
-// keyboard code. It is intentionally disabled outside DEBUGMENU builds.
+// DEBUGMENU builds start the tiny input poller automatically. The normal
+// keyboard system still handles movement direction; this only overrides
+// velocity while one of the two mod keys is held.
 struct Starter {
 	Starter()
 	{
-		std::call_once(startOnce, [] {
-			std::thread(Worker).detach();
-		});
+		std::thread(Worker).detach();
 	}
 };
 
