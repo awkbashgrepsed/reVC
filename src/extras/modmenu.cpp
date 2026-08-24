@@ -26,36 +26,23 @@ static std::atomic<bool> godMode{false};
 static std::atomic<bool> vehicleGodMode{false};
 static std::atomic<bool> running{true};
 
-static void ApplyHealth()
-{
-	CPlayerPed *ped = CWorld::Players[CWorld::PlayerInFocus].m_pPed;
-	if (ped) ped->m_fHealth = health;
-}
-
-static void ApplyArmour()
-{
-	CPlayerPed *ped = CWorld::Players[CWorld::PlayerInFocus].m_pPed;
-	if (ped) ped->m_fArmour = armour;
-}
-
+static void ApplyHealth() { CPlayerPed *ped = CWorld::Players[CWorld::PlayerInFocus].m_pPed; if (ped) ped->m_fHealth = health; }
+static void ApplyArmour() { CPlayerPed *ped = CWorld::Players[CWorld::PlayerInFocus].m_pPed; if (ped) ped->m_fArmour = armour; }
 static void FullHealth() { health = 100.0f; ApplyHealth(); }
 static void FullArmour() { armour = 100.0f; ApplyArmour(); }
+static void ToggleGodMode() { godMode = !godMode.load(); }
+static void ToggleVehicleGodMode() { vehicleGodMode = !vehicleGodMode.load(); }
 
 static void GiveSelectedWeapon()
 {
 	CPlayerPed *ped = CWorld::Players[CWorld::PlayerInFocus].m_pPed;
-	if (ped) {
-		ped->GiveWeapon((eWeaponType)weapon, 9999);
-		ped->SetCurrentWeapon((eWeaponType)weapon);
-	}
+	if (ped) { ped->GiveWeapon((eWeaponType)weapon, 9999); ped->SetCurrentWeapon((eWeaponType)weapon); }
 }
 
 static void GiveAllWeapons()
 {
 	CPlayerPed *ped = CWorld::Players[CWorld::PlayerInFocus].m_pPed;
-	if (ped)
-		for (int32 i = WEAPONTYPE_BRASSKNUCKLE; i <= WEAPONTYPE_CAMERA; i++)
-			ped->GiveWeapon((eWeaponType)i, 9999);
+	if (ped) for (int32 i = WEAPONTYPE_BRASSKNUCKLE; i <= WEAPONTYPE_CAMERA; i++) ped->GiveWeapon((eWeaponType)i, 9999);
 }
 
 static void ApplySkin()
@@ -87,18 +74,13 @@ static void SpawnRhino() { SpawnVehicle(MI_RHINO); }
 static void SpawnPolice() { SpawnVehicle(MI_POLICE); }
 static void AddMoney() { money += 10000; }
 static void MaxMoney() { money = 99999999; }
-static void ToggleGodMode() { godMode = !godMode.load(); }
-static void ToggleVehicleGodMode() { vehicleGodMode = !vehicleGodMode.load(); }
 
 static void ProtectEntities()
 {
 	while (running.load(std::memory_order_relaxed)) {
 		CPlayerPed *ped = CWorld::Players[CWorld::PlayerInFocus].m_pPed;
 		if (ped) {
-			if (godMode.load()) {
-				ped->m_fHealth = 100.0f;
-				ped->m_fArmour = 100.0f;
-			}
+			if (godMode.load()) { ped->m_fHealth = 100.0f; ped->m_fArmour = 100.0f; }
 			if (vehicleGodMode.load() && ped->bInVehicle && ped->m_pMyVehicle && ped->m_pMyVehicle->pDriver == ped)
 				ped->m_pMyVehicle->m_fHealth = 1000.0f;
 		}
@@ -114,7 +96,7 @@ struct RegisterMenu {
 		DebugMenuAddCmd("Mod Menu|Player", "Max Money", MaxMoney);
 		DebugMenuAddCmd("Mod Menu|Player", "Full Health", FullHealth);
 		DebugMenuAddCmd("Mod Menu|Player", "Full Armour", FullArmour);
-		DebugMenuAddBool8("Mod Menu|Player", "God Mode", (int8*)&godMode, nil, nil);
+		DebugMenuAddCmd("Mod Menu|Player", "Toggle God Mode", ToggleGodMode);
 		DebugMenuAddFloat32("Mod Menu|Player", "Health Value", &health, nil, 10.0f, 0.0f, 100.0f);
 		DebugMenuAddCmd("Mod Menu|Player", "Apply Health", ApplyHealth);
 		DebugMenuAddFloat32("Mod Menu|Player", "Armour Value", &armour, nil, 10.0f, 0.0f, 100.0f);
@@ -124,7 +106,7 @@ struct RegisterMenu {
 		DebugMenuAddInt32("Mod Menu|Weapons", "Weapon Index", &weapon, nil, 1, WEAPONTYPE_UNARMED, WEAPONTYPE_CAMERA, nil);
 		DebugMenuAddCmd("Mod Menu|Weapons", "Give Selected Weapon", GiveSelectedWeapon);
 		DebugMenuAddCmd("Mod Menu|Weapons", "Give All Weapons", GiveAllWeapons);
-		DebugMenuAddBool8("Mod Menu|Vehicles", "God Mode", (int8*)&vehicleGodMode, nil, nil);
+		DebugMenuAddCmd("Mod Menu|Vehicles", "Toggle Car God Mode", ToggleVehicleGodMode);
 		DebugMenuAddCmd("Mod Menu|Spawn", "Spawn Infernus", SpawnInfernus);
 		DebugMenuAddCmd("Mod Menu|Spawn", "Spawn Rhino", SpawnRhino);
 		DebugMenuAddCmd("Mod Menu|Spawn", "Spawn Police", SpawnPolice);
