@@ -4,6 +4,7 @@
 
 #include "main.h"
 #include "PlayerPed.h"
+#include "World.h"
 
 #ifdef LIBRW_GLFW
 #include <GLFW/glfw3.h>
@@ -46,7 +47,7 @@ static bool StopKeyDown()
 
 static void UpdatePlayerSpeed()
 {
-	CPlayerPed *ped = FindPlayerPed();
+	CPlayerPed *ped = CWorld::Players[CWorld::PlayerInFocus].m_pPed;
 	if (ped == nil)
 		return;
 
