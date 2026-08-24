@@ -3,7 +3,7 @@
 #ifdef DEBUGMENU
 
 #include "main.h"
-#include "Ped.h"
+#include "PlayerPed.h"
 
 #ifdef LIBRW_GLFW
 #include <GLFW/glfw3.h>
@@ -13,14 +13,9 @@
 #include <windows.h>
 #endif
 
-#include <atomic>
-#include <chrono>
 #include <cmath>
-#include <thread>
 
 namespace ReVCModSpeed {
-
-static std::atomic<bool> running{true};
 
 static bool FastKeyDown()
 {
@@ -44,9 +39,9 @@ static bool StopKeyDown()
 	return false;
 }
 
-static void UpdatePlayerSpeed()
+void Process()
 {
-	CPed *ped = FindPlayerPed();
+	CPlayerPed *ped = FindPlayerPed();
 	if (ped == nil)
 		return;
 
@@ -67,23 +62,6 @@ static void UpdatePlayerSpeed()
 		ped->SetMoveSpeed(speed.x * scale, speed.y * scale, speed.z);
 	}
 }
-
-static void Worker()
-{
-	while (running.load(std::memory_order_relaxed)) {
-		UpdatePlayerSpeed();
-		std::this_thread::sleep_for(std::chrono::milliseconds(1));
-	}
-}
-
-struct Starter {
-	Starter()
-	{
-		std::thread(Worker).detach();
-	}
-};
-
-static Starter starter;
 
 }
 
