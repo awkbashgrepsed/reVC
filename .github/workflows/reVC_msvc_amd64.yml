@@ -3,9 +3,6 @@ name: reVC Windows x64 DirectX 9
 on:
   workflow_dispatch:
 
-env:
-  CL: /DDEBUGMENU
-
 jobs:
   build:
     runs-on: windows-latest
@@ -14,19 +11,15 @@ jobs:
         uses: microsoft/setup-msbuild@v3
         with:
           vs-prerelease: true
-
       - name: Checkout
         uses: actions/checkout@v6
         with:
           submodules: true
-
       - name: Configure
         shell: pwsh
         run: ./premake5 vs2022 --with-librw
-
       - name: Build DirectX 9
         run: msbuild -m build/reVC.sln /property:Configuration=Debug /property:Platform=win-amd64-librw_d3d9-oal
-
       - name: Package
         shell: pwsh
         run: |
@@ -36,7 +29,6 @@ jobs:
           Copy-Item "vendor/mpg123/dist/Win64/libmpg123-0.dll" package/
           Copy-Item "vendor/openal-soft/dist/Win64/OpenAL32.dll" package/
           Compress-Archive -Path "package/*" -DestinationPath "reVC-modmenu-windows-d3d9-x64.zip" -Force
-
       - name: Upload ZIP
         uses: actions/upload-artifact@v4
         with:
