@@ -1,70 +1,43 @@
-name: reVC windows premake amd64
+name: reVC Windows x64 DirectX 9
 
 on:
-  pull_request:
-  push:
-  release:
-    types: published
-env:
-  GLFW_VER: "3.4"
-  GLFW_BASE: "glfw-3.4.bin.WIN64"
-  GLFW_FILE: "glfw-3.4.bin.WIN64.zip"
-  GLFW_URL: "https://github.com/glfw/glfw/releases/download/3.4/glfw-3.4.bin.WIN64.zip"
+  workflow_dispatch:
+
 jobs:
   build:
     runs-on: windows-latest
-    strategy:
-      matrix:
-        platform: [win-amd64-librw_d3d9-oal, win-amd64-librw_gl3_glfw-oal]
-        buildtype: [Debug, Release]
-        discord_rpc: [true, false]
     steps:
-    - name: Add msbuild to PATH
-      uses: microsoft/setup-msbuild@v3
-      with:
-        vs-prerelease: true
-    - uses: actions/checkout@v6
-      with:
-        submodules: 'true'
-    - if: contains(matrix.platform, 'glfw')
-      name: Download glfw
-      run: |
-          Invoke-WebRequest -Uri "${{env.GLFW_URL}}" -OutFile "${{env.GLFW_FILE}}"
-    - if: contains(matrix.platform, 'glfw')
-      name: Unpack archives
-      run: |
-          7z x ${{env.GLFW_FILE}}
-    - name: Configure build
-      shell: pwsh
-      run: |
-        $drpc = ""
-        if ("${{ matrix.discord_rpc }}" -eq "true") {
-        $drpc = " --with-discord-rpc"
-        }
-        Invoke-Expression "./premake5 vs2022 --with-librw --glfwdir64=${{ env.GLFW_BASE }}$drpc"
-    - name: Build
-      run: |
-        msbuild -m build/reVC.sln /property:Configuration=${{matrix.buildtype}} /property:Platform=${{matrix.platform}}
-    - name: Move binaries to gamefiles
-      run: |
-        mv ./bin/${{matrix.platform}}/${{matrix.buildtype}}/reVC.exe ./gamefiles/
-        mv ./bin/${{matrix.platform}}/${{matrix.buildtype}}/reVC.pdb ./gamefiles/
-    - name: Move dynamic dependencies to gamefiles
-      run: |
-        mv ./vendor/mpg123/dist/Win64/libmpg123-0.dll ./gamefiles/
-        mv ./vendor/openal-soft/dist/Win64/OpenAL32.dll ./gamefiles/
-    - name: Collect artifact name
-      id: artname
-      shell: pwsh
-      run: |
-        $suffix = ""
-        if ("${{ matrix.discord_rpc }}" -eq "true") {
-          $suffix = "-drpc"
-        }
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v3
+        with:
+          vs-prerelease: true
 
-        echo "name=reVC_${{ matrix.buildtype }}_${{ matrix.platform }}$suffix" >> $env:GITHUB_OUTPUT
-    - name: Upload artifact to actions
-      uses: actions/upload-artifact@v6
-      with:
-        name: ${{ steps.artname.outputs.name }}
-        path: ./gamefiles/*
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: true
+
+      - name: Configure
+        shell: pwsh
+        run: ./premake5 vs2022 --with-librw
+
+      - name: Build DirectX 9
+        run: msbuild -m build/reVC.sln /property:Configuration=Debug /property:Platform=win-amd64-librw_d3d9-oal
+
+      - name: Package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path package | Out-Null
+          Copy-Item "bin/win-amd64-librw_d3d9-oal/Debug/reVC.exe" package/
+          Copy-Item "bin/win-amd64-librw_d3d9-oal/Debug/reVC.pdb" package/ -ErrorAction SilentlyContinue
+          Copy-Item "vendor/mpg123/dist/Win64/libmpg123-0.dll" package/
+          Copy-Item "vendor/openal-soft/dist/Win64/OpenAL32.dll" package/
+          Compress-Archive -Path "package/*" -DestinationPath "reVC-modmenu-windows-d3d9-x64.zip" -Force
+
+      - name: Upload ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: reVC-modmenu-windows-d3d9-x64
+          path: reVC-modmenu-windows-d3d9-x64.zip
+          if-no-files-found: error
+          retention-days: 30
