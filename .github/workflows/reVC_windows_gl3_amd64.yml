@@ -4,6 +4,7 @@ on:
   workflow_dispatch:
 
 env:
+  CL: /DDEBUGMENU
   GLFW_FILE: glfw-3.4.bin.WIN64.zip
   GLFW_BASE: glfw-3.4.bin.WIN64
   GLFW_URL: https://github.com/glfw/glfw/releases/download/3.4/glfw-3.4.bin.WIN64.zip
