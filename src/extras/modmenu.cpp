@@ -5,7 +5,7 @@
 #include "debugmenu.h"
 #include "World.h"
 #include "PlayerInfo.h"
-#include "Ped.h"
+#include "PlayerPed.h"
 #include "Streaming.h"
 #include "Automobile.h"
 #include "ModelIndices.h"
@@ -18,51 +18,36 @@ static int32 weapon = WEAPONTYPE_COLT45;
 static int32 skin = 0;
 static int32 &money = CWorld::Players[0].m_nMoney;
 
-static const char *weaponNames[] = {
-	"Unarmed", "Brass Knuckles", "Screwdriver", "Golf Club", "Nightstick",
-	"Knife", "Baseball Bat", "Hammer", "Cleaver", "Machete", "Katana",
-	"Chainsaw", "Grenade", "Detonator Grenade", "Tear Gas", "Molotov",
-	"Rocket", "Colt 45", "Python", "Shotgun", "Spas-12", "Stubby Shotgun",
-	"Tec-9", "Uzi", "Silenced Ingram", "MP5", "M4", "Ruger", "Sniper Rifle",
-	"Laser Scope", "Rocket Launcher", "Flamethrower", "M60", "Minigun",
-	"Detonator", "Helicannon", "Camera"
-};
-
-static const char *skinNames[] = {
-	"player", "cop", "swat", "fbi", "army", "medic", "fireman", "golf"
-};
-
 static void ApplyHealth()
 {
-	if (CPed *ped = FindPlayerPed())
+	CPlayerPed *ped = FindPlayerPed();
+	if (ped)
 		ped->m_fHealth = health;
 }
 
 static void ApplyArmour()
 {
-	if (CPed *ped = FindPlayerPed())
+	CPlayerPed *ped = FindPlayerPed();
+	if (ped)
 		ped->m_fArmour = armour;
 }
 
 static void FullHealth()
 {
-	if (CPed *ped = FindPlayerPed()) {
-		health = 100.0f;
-		ped->m_fHealth = 100.0f;
-	}
+	health = 100.0f;
+	ApplyHealth();
 }
 
 static void FullArmour()
 {
-	if (CPed *ped = FindPlayerPed()) {
-		armour = 100.0f;
-		ped->m_fArmour = 100.0f;
-	}
+	armour = 100.0f;
+	ApplyArmour();
 }
 
 static void GiveSelectedWeapon()
 {
-	if (CPed *ped = FindPlayerPed()) {
+	CPlayerPed *ped = FindPlayerPed();
+	if (ped) {
 		ped->GiveWeapon((eWeaponType)weapon, 9999);
 		ped->SetCurrentWeapon((eWeaponType)weapon);
 	}
@@ -70,7 +55,8 @@ static void GiveSelectedWeapon()
 
 static void GiveAllWeapons()
 {
-	if (CPed *ped = FindPlayerPed()) {
+	CPlayerPed *ped = FindPlayerPed();
+	if (ped) {
 		for (int32 i = WEAPONTYPE_BRASSKNUCKLE; i <= WEAPONTYPE_CAMERA; i++)
 			ped->GiveWeapon((eWeaponType)i, 9999);
 	}
@@ -78,6 +64,10 @@ static void GiveAllWeapons()
 
 static void ApplySkin()
 {
+	static const char *skinNames[] = {
+		"player", "cop", "swat", "fbi", "army", "medic", "fireman", "golf"
+	};
+
 	if (skin >= 0 && skin < (int32)(sizeof(skinNames) / sizeof(skinNames[0])))
 		CWorld::Players[0].SetPlayerSkin(skinNames[skin]);
 }
@@ -105,53 +95,38 @@ static void SpawnVehicle(int32 modelId)
 	CWorld::Add(vehicle);
 }
 
-static void SpawnInfernus()
-{
-	SpawnVehicle(MI_INFERNUS);
-}
+static void SpawnInfernus() { SpawnVehicle(MI_INFERNUS); }
+static void SpawnRhino() { SpawnVehicle(MI_RHINO); }
+static void SpawnPolice() { SpawnVehicle(MI_POLICE); }
+static void AddMoney() { money += 10000; }
+static void MaxMoney() { money = 99999999; }
 
-static void SpawnRhino()
-{
-	SpawnVehicle(MI_RHINO);
-}
+struct RegisterMenu {
+	RegisterMenu()
+	{
+		DebugMenuAddInt32("Mod Menu|Player", "Money", &money, nil, 1000, 0, 99999999, nil);
+		DebugMenuAddCmd("Mod Menu|Player", "Give $10,000", AddMoney);
+		DebugMenuAddCmd("Mod Menu|Player", "Max Money", MaxMoney);
+		DebugMenuAddCmd("Mod Menu|Player", "Full Health", FullHealth);
+		DebugMenuAddCmd("Mod Menu|Player", "Full Armour", FullArmour);
+		DebugMenuAddFloat32("Mod Menu|Player", "Health Value", &health, nil, 10.0f, 0.0f, 100.0f);
+		DebugMenuAddCmd("Mod Menu|Player", "Apply Health", ApplyHealth);
+		DebugMenuAddFloat32("Mod Menu|Player", "Armour Value", &armour, nil, 10.0f, 0.0f, 100.0f);
+		DebugMenuAddCmd("Mod Menu|Player", "Apply Armour", ApplyArmour);
+		DebugMenuAddInt32("Mod Menu|Player", "Skin Index", &skin, nil, 1, 0, 7, nil);
+		DebugMenuAddCmd("Mod Menu|Player", "Apply Skin", ApplySkin);
 
-static void SpawnPolice()
-{
-	SpawnVehicle(MI_POLICE);
-}
+		DebugMenuAddInt32("Mod Menu|Weapons", "Weapon Index", &weapon, nil, 1, WEAPONTYPE_UNARMED, WEAPONTYPE_CAMERA, nil);
+		DebugMenuAddCmd("Mod Menu|Weapons", "Give Selected Weapon", GiveSelectedWeapon);
+		DebugMenuAddCmd("Mod Menu|Weapons", "Give All Weapons", GiveAllWeapons);
 
-static void AddMoney()
-{
-	money += 10000;
-}
+		DebugMenuAddCmd("Mod Menu|Spawn", "Spawn Infernus", SpawnInfernus);
+		DebugMenuAddCmd("Mod Menu|Spawn", "Spawn Rhino", SpawnRhino);
+		DebugMenuAddCmd("Mod Menu|Spawn", "Spawn Police", SpawnPolice);
+	}
+};
 
-static void MaxMoney()
-{
-	money = 99999999;
-}
-
-SETTWEAKPATH("Mod Menu|Player");
-TWEAKINT32N(money, 0, 99999999, 1000, "Money");
-TWEAKFUNCN(AddMoney, "Give $10,000");
-TWEAKFUNCN(MaxMoney, "Max Money");
-TWEAKFUNCN(FullHealth, "Full Health");
-TWEAKFUNCN(FullArmour, "Full Armour");
-TWEAKFLOATN(health, 0.0f, 100.0f, 10.0f, "Health Value");
-TWEAKFUNCN(ApplyHealth, "Apply Health");
-TWEAKFLOATN(armour, 0.0f, 100.0f, 10.0f, "Armour Value");
-TWEAKFUNCN(ApplyArmour, "Apply Armour");
-TWEAKINT32N(skin, 0, 7, 1, "Skin Index");
-TWEAKFUNCN(ApplySkin, "Apply Skin");
-
-SETTWEAKPATH("Mod Menu|Weapons");
-TWEAKINT32N(weapon, WEAPONTYPE_UNARMED, WEAPONTYPE_CAMERA, 1, "Weapon Index");
-TWEAKFUNCN(GiveSelectedWeapon, "Give Selected Weapon");
-TWEAKFUNCN(GiveAllWeapons, "Give All Weapons");
-
-SETTWEAKPATH("Mod Menu|Spawn");
-TWEAKFUNCN(SpawnInfernus, "Spawn Infernus");
-TWEAKFUNCN(SpawnRhino, "Spawn Rhino");
-TWEAKFUNCN(SpawnPolice, "Spawn Police");
+static RegisterMenu registerMenu;
 
 }
 
