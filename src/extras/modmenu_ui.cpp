@@ -4,24 +4,22 @@
 
 #include "rtcharse.h"
 
-#include <atomic>
 #include <chrono>
 #include <thread>
 
-// debugmenu.cpp owns these font objects. The stock normal style has a
-// transparent background, which makes the menu nearly impossible to read
-// over the game world. Replace only the normal style with the same font
-// colours plus a dark opaque background once DebugMenuInit has created it.
+// Keep normal debug-menu text clean. The old implementation used the charset
+// background as a backdrop for every glyph, which made the text look slightly
+// corrupted and did not create the large panel we actually want.
 extern RtCharset *fontStyles[4];
 
 namespace ReVCModMenuUI {
 
-static void ApplyBackground()
+static void ApplyCleanTextStyle()
 {
 	for (;;) {
 		if (fontStyles[0] != nil) {
 			RwRGBA fg = { 255, 255, 255, 255 };
-			RwRGBA bg = { 12, 12, 12, 220 };
+			RwRGBA bg = { 0, 0, 0, 0 };
 			RtCharset *replacement = RtCharsetCreate(&fg, &bg);
 			if (replacement != nil) {
 				RtCharset *old = fontStyles[0];
@@ -37,7 +35,7 @@ static void ApplyBackground()
 struct Starter {
 	Starter()
 	{
-		std::thread(ApplyBackground).detach();
+		std::thread(ApplyCleanTextStyle).detach();
 	}
 };
 
