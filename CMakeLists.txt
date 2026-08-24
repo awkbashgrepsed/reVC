@@ -1,5 +1,4 @@
 cmake_minimum_required(VERSION 3.14)
-
 set(EXECUTABLE reVC)
 set(PROJECT REVC)
 project(${EXECUTABLE} C CXX)
@@ -7,21 +6,17 @@ set(${PROJECT}_AUTHOR "${PROJECT} Team")
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
-
 include(GetGitRevisionDescription)
 get_git_head_revision(GIT_REFSPEC GIT_SHA1 "ALLOW_LOOKING_ABOVE_CMAKE_SOURCE_DIR")
 message(STATUS "Building ${CMAKE_PROJECT_NAME} GIT SHA1: ${GIT_SHA1}")
-
 if(NINTENDO_SWITCH)
     list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake/nx")
     include(NXFunctions)
 endif()
-
 if(NOT COMMAND reVC_platform_target)
     function(reVC_platform_target)
     endfunction()
 endif()
-
 if(WIN32)
     set(${PROJECT}_AUDIOS "OAL" "MSS")
 else()
@@ -29,22 +24,17 @@ else()
 endif()
 set(${PROJECT}_AUDIO "OAL" CACHE STRING "Audio")
 set_property(CACHE ${PROJECT}_AUDIO PROPERTY STRINGS ${${PROJECT}_AUDIOS})
-message(STATUS "${PROJECT}_AUDIO = ${${PROJECT}_AUDIO} (choices=${${PROJECT}_AUDIOS})")
 set("${PROJECT}_AUDIO_${${PROJECT}_AUDIO}" ON)
 if(NOT ${PROJECT}_AUDIO IN_LIST ${PROJECT}_AUDIOS)
     message(FATAL_ERROR "Illegal ${PROJECT}_AUDIO=${${PROJECT}_AUDIO}")
 endif()
-
 option(${PROJECT}_WITH_OPUS "Build ${EXECUTABLE} with opus support" OFF)
 option(${PROJECT}_WITH_LIBSNDFILE "Build ${EXECUTABLE} with libsndfile (instead of internal decoder)" OFF)
 option(${PROJECT}_WITH_DISCORD_RPC "Build ${EXECUTABLE} with Discord Rich Presence" OFF)
 
 if(${PROJECT}_WITH_DISCORD_RPC)
     set(DISCORD_RPC_DIR "${PROJECT_SOURCE_DIR}/vendor/discord-rpc" CACHE PATH "Path to discord-rpc source directory")
-    set(DISCORD_RPC_SOURCES
-        "${DISCORD_RPC_DIR}/src/discord_rpc.cpp"
-        "${DISCORD_RPC_DIR}/src/rpc_connection.cpp"
-        "${DISCORD_RPC_DIR}/src/serialization.cpp")
+    set(DISCORD_RPC_SOURCES "${DISCORD_RPC_DIR}/src/discord_rpc.cpp" "${DISCORD_RPC_DIR}/src/rpc_connection.cpp" "${DISCORD_RPC_DIR}/src/serialization.cpp")
     if(WIN32)
         list(APPEND DISCORD_RPC_SOURCES "${DISCORD_RPC_DIR}/src/connection_win.cpp" "${DISCORD_RPC_DIR}/src/discord_register_win.cpp")
     elseif(APPLE)
@@ -54,8 +44,6 @@ if(${PROJECT}_WITH_DISCORD_RPC)
     endif()
     add_library(discord-rpc STATIC ${DISCORD_RPC_SOURCES})
     target_include_directories(discord-rpc PUBLIC "${DISCORD_RPC_DIR}/include" "${DISCORD_RPC_DIR}/thirdparty/rapidjson/include")
-    target_compile_options(discord-rpc PRIVATE -Wno-template-body)
-    set_target_properties(discord-rpc PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS ON)
     if(UNIX AND NOT APPLE)
         target_link_libraries(discord-rpc PUBLIC pthread)
     endif()
@@ -69,7 +57,6 @@ if(LIBRW_GL3_GFXLIB STREQUAL "GLFW")
     set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
     add_subdirectory(vendor/glfw)
 endif()
-
 option(${PROJECT}_VENDORED_LIBRW "Use vendored librw" ON)
 if(${PROJECT}_VENDORED_LIBRW)
     add_subdirectory(vendor/librw)
@@ -77,37 +64,32 @@ else()
     find_package(librw REQUIRED)
 endif()
 
-# Embed Lua 5.4 so scripts are portable on Windows and Linux.
+# Lua 5.4 is downloaded and built into reVC, so the same scripts work on Windows and Linux.
 include(FetchContent)
-FetchContent_Declare(lua SOURCE_DIR "${PROJECT_SOURCE_DIR}/vendor/lua")
+FetchContent_Declare(lua URL https://github.com/lua/lua/archive/refs/tags/v5.4.8.tar.gz)
 FetchContent_GetProperties(lua)
 if(NOT lua_POPULATED)
     FetchContent_Populate(lua)
 endif()
-
 add_library(revc_lua STATIC
-    vendor/lua/lapi.c vendor/lua/lauxlib.c vendor/lua/lbaselib.c
-    vendor/lua/lcode.c vendor/lua/lcorolib.c vendor/lua/lctype.c
-    vendor/lua/ldblib.c vendor/lua/ldebug.c vendor/lua/ldo.c
-    vendor/lua/ldump.c vendor/lua/lfunc.c vendor/lua/lgc.c
-    vendor/lua/linit.c vendor/lua/liolib.c vendor/lua/llex.c
-    vendor/lua/lmathlib.c vendor/lua/lmem.c vendor/lua/loadlib.c
-    vendor/lua/lobject.c vendor/lua/lopcodes.c vendor/lua/loslib.c
-    vendor/lua/lparser.c vendor/lua/lstate.c vendor/lua/lstring.c
-    vendor/lua/lstrlib.c vendor/lua/ltable.c vendor/lua/ltablib.c
-    vendor/lua/ltm.c vendor/lua/lundump.c vendor/lua/lutf8lib.c
-    vendor/lua/lvm.c vendor/lua/lzio.c)
-target_include_directories(revc_lua PUBLIC vendor/lua)
+    ${lua_SOURCE_DIR}/lapi.c ${lua_SOURCE_DIR}/lauxlib.c ${lua_SOURCE_DIR}/lbaselib.c
+    ${lua_SOURCE_DIR}/lcode.c ${lua_SOURCE_DIR}/lcorolib.c ${lua_SOURCE_DIR}/lctype.c
+    ${lua_SOURCE_DIR}/ldblib.c ${lua_SOURCE_DIR}/ldebug.c ${lua_SOURCE_DIR}/ldo.c
+    ${lua_SOURCE_DIR}/ldump.c ${lua_SOURCE_DIR}/lfunc.c ${lua_SOURCE_DIR}/lgc.c
+    ${lua_SOURCE_DIR}/linit.c ${lua_SOURCE_DIR}/liolib.c ${lua_SOURCE_DIR}/llex.c
+    ${lua_SOURCE_DIR}/lmathlib.c ${lua_SOURCE_DIR}/lmem.c ${lua_SOURCE_DIR}/loadlib.c
+    ${lua_SOURCE_DIR}/lobject.c ${lua_SOURCE_DIR}/lopcodes.c ${lua_SOURCE_DIR}/loslib.c
+    ${lua_SOURCE_DIR}/lparser.c ${lua_SOURCE_DIR}/lstate.c ${lua_SOURCE_DIR}/lstring.c
+    ${lua_SOURCE_DIR}/lstrlib.c ${lua_SOURCE_DIR}/ltable.c ${lua_SOURCE_DIR}/ltablib.c
+    ${lua_SOURCE_DIR}/ltm.c ${lua_SOURCE_DIR}/lundump.c ${lua_SOURCE_DIR}/lutf8lib.c
+    ${lua_SOURCE_DIR}/lvm.c ${lua_SOURCE_DIR}/lzio.c)
+target_include_directories(revc_lua PUBLIC ${lua_SOURCE_DIR})
 set_target_properties(revc_lua PROPERTIES C_STANDARD 99 C_STANDARD_REQUIRED ON)
 
 add_subdirectory(src)
 
 if(${PROJECT}_INSTALL)
-    if(LIBRW_PLATFORM_NULL)
-        set(platform "-null")
-    elseif(LIBRW_PLATFORM_PS2)
-        set(platform "-ps2")
-    elseif(LIBRW_PLATFORM_GL3)
+    if(LIBRW_PLATFORM_GL3)
         if(LIBRW_GL3_GFXLIB STREQUAL "GLFW")
             set(platform "-gl3-glfw")
         else()
@@ -131,8 +113,6 @@ if(${PROJECT}_INSTALL)
             set(os "-apple")
         elseif(UNIX)
             set(os "-linux")
-        elseif(NINTENDO_SWITCH)
-            set(os "-switch")
         endif()
     endif()
     if(${PROJECT}_WITH_DISCORD_RPC)
